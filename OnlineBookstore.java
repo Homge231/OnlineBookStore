@@ -1,6 +1,4 @@
 package Coursework;
-
-import java.util.Arrays;
 import java.util.Scanner;
 
 // BOOK CLASS
@@ -102,10 +100,17 @@ class ArrayListADT<E> implements AbstractList<E> {
         elements = new Object[DEFAULT_CAPACITY];
         nextIndex = 0;
     }
+    private E[] resizeArray(E[] oldArray, int newSize) {
+        E[] newArray = (E[]) new Object[newSize];
+        for (int i = 0; i < Math.min(oldArray.length, newSize); i++) {
+            newArray[i] = oldArray[i];
+        }
+        return newArray;
+    }
     @Override
     public boolean add(E element) {
         if (nextIndex == elements.length) {
-            elements = Arrays.copyOf(elements, elements.length * 2);
+            elements = resizeArray((E[]) elements, elements.length * 2);
         }
         elements[nextIndex] = element;
         nextIndex++;
@@ -117,7 +122,8 @@ class ArrayListADT<E> implements AbstractList<E> {
             throw new IndexOutOfBoundsException("Index out of bounds: " + index);
         }
         if (nextIndex == elements.length) {
-            elements = Arrays.copyOf(elements, elements.length * 2);
+
+            elements = resizeArray((E[]) elements, elements.length * 2);
         }
         for (int i = nextIndex; i > index; i--) {
             elements[i] = elements[i - 1];
@@ -144,7 +150,6 @@ class ArrayListADT<E> implements AbstractList<E> {
         elements[index] = element;
         return oldElement;
     }
-    @SuppressWarnings("unchecked")
     @Override
     public E remove(int index) {
         if (index < 0 || index >= nextIndex) {
@@ -157,7 +162,8 @@ class ArrayListADT<E> implements AbstractList<E> {
         elements[nextIndex - 1] = null;
         nextIndex--;
         if (nextIndex < elements.length / 3 && elements.length > DEFAULT_CAPACITY) {
-            elements = Arrays.copyOf(elements, elements.length / 2);
+
+            elements = resizeArray((E[]) elements, elements.length / 2);
         }
         return removedElement;
     }
@@ -231,22 +237,22 @@ class Order {
     }
 
     public void sortBooks() {
-        if (books.size() <= 1) return;
-        BookEntry[] array = new BookEntry[books.size()];
-        LinkedQueueADT<BookEntry> temp = new LinkedQueueADT<>();
-        int index = 0;
-        while (!books.isEmpty()) {
-            BookEntry entry = books.poll();
-            array[index++] = entry;
-            temp.offer(entry);
+            if (books.size() <= 1) return;
+            BookEntry[] array = new BookEntry[books.size()];
+            LinkedQueueADT<BookEntry> temp = new LinkedQueueADT<>();
+            int index = 0;
+            while (!books.isEmpty()) {
+                BookEntry entry = books.poll();
+                array[index++] = entry;
+                temp.offer(entry);
+            }
+            while (!temp.isEmpty()) books.offer(temp.poll());
+            BookQuickSort.sort(array, 0, array.length - 1);
+            while (!books.isEmpty()) books.poll();
+            for (BookEntry entry : array) {
+                books.offer(entry);
+            }
         }
-        while (!temp.isEmpty()) books.offer(temp.poll());
-        BookQuickSort.sort(array, 0, array.length - 1);
-        while (!books.isEmpty()) books.poll();
-        for (BookEntry entry : array) {
-            books.offer(entry);
-        }
-    }
 
     public void process() {
         if (status.equals("Processed")) {
@@ -325,7 +331,7 @@ public class OnlineBookstore {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("exit")) {
-                return -1; // Báo hiệu hủy
+                return -1;
             }
             try {
                 if (input.isEmpty()) throw new NumberFormatException();
@@ -344,7 +350,7 @@ public class OnlineBookstore {
             System.out.println("2. Admin");
             System.out.println("3. Exit");
             int choice = getValidIntInput(scanner, "Choose your role (1/2/3): ", "Invalid input. Please enter a valid number.");
-            if (choice == -1) choice = 3; // "exit" tương đương với thoát
+            if (choice == -1) choice = 3;
             switch (choice) {
                 case 1: customerMenu(scanner); break;
                 case 2: adminMenu(scanner); break;
@@ -362,7 +368,7 @@ public class OnlineBookstore {
             System.out.println("3. Search Books");
             System.out.println("4. Back to Main Menu");
             int choice = getValidIntInput(scanner, "Choose an option: ", "Invalid input. Please enter a valid number.");
-            if (choice == -1) return; // Thoát nếu nhập "exit"
+            if (choice == -1) return;
             switch (choice) {
                 case 1: displayBooks(); break;
                 case 2: addOrder(scanner); break;
@@ -382,7 +388,7 @@ public class OnlineBookstore {
             System.out.println("4. Add Book");
             System.out.println("5. Back to Main Menu");
             int choice = getValidIntInput(scanner, "Choose an option: ", "Invalid input. Please enter a valid number.");
-            if (choice == -1) return; // Thoát nếu nhập "exit"
+            if (choice == -1) return;
             switch (choice) {
                 case 1: processNextOrder(); break;
                 case 2: viewOrders(); break;
@@ -422,19 +428,18 @@ public class OnlineBookstore {
             System.out.println(e.getMessage());
             return;
         }
-
         displayBooks();
         while (true) {
             int bookIndex = getValidIntInput(scanner, "Enter book number (0 to finish): ", "Invalid input. Please enter a valid number.") - 1;
-            if (bookIndex == -2) return; // Thoát nếu nhập "exit" (-1 - 1 = -2)
-            if (bookIndex == -1) break; // Thoát vòng lặp nếu nhập 0
+            if (bookIndex == -2) return;
+            if (bookIndex == -1) break;
             if (bookIndex < 0 || bookIndex >= books.size()) {
                 System.out.println("Invalid book number.");
                 continue;
             }
             Book book = books.get(bookIndex);
             int quantity = getValidIntInput(scanner, "Enter quantity: ", "Invalid input. Please enter a valid number.");
-            if (quantity == -1) continue; // Bỏ qua nếu nhập "exit"
+            if (quantity == -1) continue;
             try {
                 order.addBook(book, quantity);
                 System.out.println("Book added to order: " + book.getTitle());
@@ -447,9 +452,9 @@ public class OnlineBookstore {
             System.out.println("Order not added because no books were selected.");
             return;
         }
-        order.sortBooks();
         pendingOrders.offer(order);
         System.out.println("Order added successfully!");
+        order.sortBooks();
     }
 
     private static void searchBooks(Scanner scanner) {
@@ -509,7 +514,7 @@ public class OnlineBookstore {
         }
         while (!temp.isEmpty()) processedOrders.offer(temp.poll());
 
-        printOrderTableFooter();
+
     }
 
     private static void searchOrders(Scanner scanner) {
@@ -545,7 +550,6 @@ public class OnlineBookstore {
         }
         while (!temp.isEmpty()) processedOrders.offer(temp.poll());
 
-        printOrderTableFooter();
         if (!found) System.out.println("No orders found for " + name);
     }
 
@@ -568,7 +572,7 @@ public class OnlineBookstore {
             return;
         }
         int stock = getValidIntInput(scanner, "Enter stock quantity: ", "Invalid input. Please enter a valid number.");
-        if (stock == -1) return; // Thoát nếu nhập "exit"
+        if (stock == -1) return;
         if (stock < 0) {
             System.out.println("Stock cannot be negative.");
             return;
@@ -622,7 +626,7 @@ public class OnlineBookstore {
         System.out.println("+------+--------------------+--------------------+----------------------+-------------+");
     }
 
-    private static void printOrderTableFooter() {}
+
 
     private static String truncateOrPad(String text, int length) {
         if (text == null) text = "";
